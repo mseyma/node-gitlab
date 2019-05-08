@@ -1,32 +1,33 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import {
+  BaseRequestOptions,
+  BaseServiceOptions,
+  Sudo,
+  ProjectId,
+  SupportedService,
+} from '../../types/types';
 
-type ServiceName = 'asana' | 'assembla' | 'bamboo' | 'bugzilla' | 'buildkite' | 'campfire'
-  | 'custom-issue-tracker' | 'drone-ci' | 'emails-on-push' | 'external-wiki' | 'flowdock'
-  | 'hangouts_chat' | 'hipchat' | 'irker' | 'jira' | 'kubernetes' | 'slack-slash-commands'
-  | 'slack' | 'mattermost-slash-commands' | 'packagist' | 'pipelines-email' | 'pivotaltracker'
-  | 'prometheus' | 'pushover' | 'redmine' | 'microsoft-teams' | 'mattermost'
-  | 'mattermost-slash-commands' | 'teamcity' | 'jenkins' | 'jenkins-deprecated' | 'mock-ci';
-/**
- * @see https://docs.gitlab.com/ee/api/services.html
- */
 class Services extends BaseService {
-  edit(projectId: ProjectId, serviceName: ServiceName, options: RequestOptions) {
-    const pId = encodeURIComponent(projectId);
-
-    return RequestHelper.put(this, `projects/${pId}/services/${serviceName}`, options);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['projects']);
   }
 
-  remove(projectId: ProjectId, serviceName: ServiceName) {
+  edit(projectId: ProjectId, serviceName: SupportedService, options?: BaseRequestOptions) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.delete(this, `projects/${pId}/services/${serviceName}`);
+    return RequestHelper.put(this, `${pId}/services/${serviceName}`, options);
   }
 
-  show(projectId: ProjectId, serviceName: ServiceName) {
+  remove(projectId: ProjectId, serviceName: SupportedService, options?: Sudo) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.get(this, `projects/${pId}/services/${serviceName}`);
+    return RequestHelper.del(this, `${pId}/services/${serviceName}`, options);
+  }
+
+  show(projectId: ProjectId, serviceName: SupportedService, options?: Sudo) {
+    const pId = encodeURIComponent(projectId);
+
+    return RequestHelper.get(this, `${pId}/services/${serviceName}`, options);
   }
 }
 

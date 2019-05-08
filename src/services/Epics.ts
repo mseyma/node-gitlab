@@ -1,37 +1,46 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
-
-export type EpicId = string | number;
+import {
+  BaseServiceOptions,
+  BaseRequestOptions,
+  PaginatedRequestOptions,
+  Sudo,
+  GroupId,
+  EpicId,
+} from '../../types/types';
 
 class Epics extends BaseService {
-  all(groupId: GroupId) {
+  constructor(options: BaseServiceOptions) {
+    super(options, ['groups']);
+  }
+
+  all(groupId: GroupId, options?: PaginatedRequestOptions) {
     const gId = encodeURIComponent(groupId);
 
-    return RequestHelper.get(this, `groups/${gId}/epics`);
+    return RequestHelper.get(this, `${gId}/epics`, options);
   }
 
-  create(groupId: GroupId, title: string, options: RequestOptions) {
+  create(groupId: GroupId, title: string, options?: BaseRequestOptions) {
     const gId = encodeURIComponent(groupId);
 
-    return RequestHelper.post(this, `groups/${gId}/epics`, { title, ...options });
+    return RequestHelper.post(this, `${gId}/epics`, { title, ...options });
   }
 
-  edit(groupId: GroupId, epicId: EpicId, options: RequestOptions) {
+  edit(groupId: GroupId, epicId: EpicId, options?: BaseRequestOptions) {
     const [gId, eId] = [groupId, epicId].map(encodeURIComponent);
 
-    return RequestHelper.put(this, `groups/${gId}/epics/${eId}`, options);
+    return RequestHelper.put(this, `${gId}/epics/${eId}`, options);
   }
 
-  remove(groupId: GroupId, epicId: EpicId) {
+  remove(groupId: GroupId, epicId: EpicId, options?: Sudo) {
     const [gId, eId] = [groupId, epicId].map(encodeURIComponent);
 
-    return RequestHelper.delete(this, `groups/${gId}/epics/${eId}`);
+    return RequestHelper.del(this, `${gId}/epics/${eId}`, options);
   }
 
-  show(groupId: GroupId, epicId: EpicId) {
+  show(groupId: GroupId, epicId: EpicId, options?: Sudo) {
     const [gId, eId] = [groupId, epicId].map(encodeURIComponent);
 
-    return RequestHelper.get(this, `groups/${gId}/epics/${eId}`);
+    return RequestHelper.get(this, `${gId}/epics/${eId}`, options);
   }
 }
 

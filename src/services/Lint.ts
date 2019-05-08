@@ -1,8 +1,13 @@
 import { BaseService, RequestHelper } from '../infrastructure';
+import { BaseServiceOptions, Sudo } from '../../types/types';
 
 class Lint extends BaseService {
-  lint(content: string) {
-    return RequestHelper.post(this, 'lint', { content });
+  constructor(options: BaseServiceOptions) {
+    super(options, ['ci', 'lint']);
+  }
+
+  lint(content: string, options?: Sudo) {
+    return RequestHelper.post(this, '', { content, ...options});
   }
 }
 

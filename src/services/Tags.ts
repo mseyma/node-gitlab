@@ -1,29 +1,39 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import {
+  PaginatedRequestOptions,
+  BaseRequestOptions,
+  BaseServiceOptions,
+  Sudo,
+  ProjectId,
+} from '../../types/types';
 
 class Tags extends BaseService {
-  all(projectId: ProjectId, options: RequestOptions) {
+  constructor(options: BaseServiceOptions) {
+    super(options, ['projects']);
+  }
+
+  all(projectId: ProjectId, options?: PaginatedRequestOptions) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.get(this, `projects/${pId}/repository/tags`, options);
+    return RequestHelper.get(this, `${pId}/repository/tags`, options);
   }
 
-  create(projectId: ProjectId, options: RequestOptions) {
+  create(projectId: ProjectId, options?: BaseRequestOptions) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.post(this, `projects/${pId}/repository/tags`, options);
+    return RequestHelper.post(this, `${pId}/repository/tags`, options);
   }
 
-  remove(projectId: ProjectId, tagName: string) {
+  remove(projectId: ProjectId, tagName: string, options?: Sudo) {
     const [pId, tId] = [projectId, tagName].map(encodeURIComponent);
 
-    return RequestHelper.delete(this, `projects/${pId}/repository/tags/${tId}`);
+    return RequestHelper.del(this, `${pId}/repository/tags/${tId}`, options);
   }
 
-  show(projectId: ProjectId, tagName: string) {
+  show(projectId: ProjectId, tagName: string, options?: Sudo) {
     const [pId, tId] = [projectId, tagName].map(encodeURIComponent);
 
-    return RequestHelper.get(this, `projects/${pId}/repository/tags/${tId}`);
+    return RequestHelper.get(this, `${pId}/repository/tags/${tId}`, options);
   }
 }
 

@@ -1,16 +1,20 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import { BaseServiceOptions, PaginatedRequestOptions, BaseRequestOptions } from '../../types/types';
 
 class FeatureFlags extends BaseService {
-  all(options: RequestOptions) {
-    return RequestHelper.get(this, 'features', options);
-  }
+	constructor(options: BaseServiceOptions) {
+		super(options, ['features']);
+	}
 
-  set(name: string, options: RequestOptions) {
-    const encodedName = encodeURIComponent(name);
+	all(options?: PaginatedRequestOptions) {
+		return RequestHelper.get(this, '', options);
+	}
 
-    return RequestHelper.post(this, `features/${encodedName}`, options);
-  }
+	set(name: string, options?: BaseRequestOptions) {
+		const encodedName = encodeURIComponent(name);
+
+		return RequestHelper.post(this, `${encodedName}`, options);
+	}
 }
 
 export default FeatureFlags;

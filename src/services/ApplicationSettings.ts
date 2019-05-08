@@ -1,13 +1,17 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import { BaseServiceOptions, BaseRequestOptions, Sudo } from '../../types/types';
 
 class ApplicationSettings extends BaseService {
-  all() {
-    return RequestHelper.get(this, 'application/settings');
+  constructor(options: BaseServiceOptions) {
+  	super(options, ['application', 'settings']);
   }
 
-  edit(options: RequestOptions) {
-    return RequestHelper.put(this, 'application/settings', options);
+  all(options?: Sudo) {
+    return RequestHelper.get(this, '', options);
+  }
+
+  edit(options?: BaseRequestOptions) {
+    return RequestHelper.put(this, '', options);
   }
 }
 

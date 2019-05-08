@@ -1,30 +1,35 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import {
+  PaginatedRequestOptions,
+  BaseRequestOptions,
+  BaseServiceOptions,
+  Sudo,
+  HookId,
+} from '../../types/types';
 
-export type HookId = string | number;
 class SystemHooks extends BaseService {
-  add(url: string, options: RequestOptions) {
-    return RequestHelper.post(this, 'hooks', { url, ...options });
+  constructor(options: BaseServiceOptions) {
+    super(options, ['hooks']);
   }
 
-  all(options: RequestOptions) {
-    return RequestHelper.get(this, 'hooks', options);
+  add(url: string, options?: BaseRequestOptions) {
+    return RequestHelper.post(this, '', { url, ...options });
   }
 
-  edit(hookId: HookId, url: string, options: RequestOptions) {
+  all(options?: PaginatedRequestOptions) {
+    return RequestHelper.get(this, '', options);
+  }
+
+  edit(hookId: HookId, url: string, options?: BaseRequestOptions) {
     const hId = encodeURIComponent(hookId);
 
-    return RequestHelper.put(this, `hooks/${hId}`, { url, ...options });
+    return RequestHelper.put(this, `${hId}`, { url, ...options });
   }
 
-  remove(
-    // @ts-ignore 'projectId' is declared but its value is never read
-    projectId: ProjectId,
-    hookId: HookId,
-  ) {
+  remove(hookId: HookId, options?: Sudo) {
     const hId = encodeURIComponent(hookId);
 
-    return RequestHelper.delete(this, `hooks/${hId}`);
+    return RequestHelper.del(this, `${hId}`, options);
   }
 }
 

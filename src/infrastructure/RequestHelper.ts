@@ -1,277 +1,150 @@
-import Humps from 'humps';
-import LinkParser from 'parse-link-header';
-import QS from 'qs';
-import URLJoin from 'url-join';
-import StreamableRequest from 'request';
-import { BaseService } from '.';
-import { CommitAction } from '../services/Commits';
+import FormData from 'form-data';
+import { decamelizeKeys } from 'humps';
+import { stringify } from 'query-string';
+import { skipAllCaps } from './Utils';
+import {
+  PaginatedRequestOptions,
+  BaseRequestOptions,
+  DefaultRequestOptions,
+  GetResponse,
+  PostResponse,
+  PutResponse,
+  DelResponse,
+} from '../../types/types';
 
-export interface RequestParametersInput {
-  url?: string;
-  headers: import('./BaseService').default['headers'];
-  json?: boolean;
-  body?: Object;
-  qs?: Object;
-  qsStringifyOptions? : Object;
-  formData?: temporaryAny;
-  resolveWithFullResponse?: boolean;
-  rejectUnauthorized?: boolean;
+function defaultRequest(service, endpoint: string, { body, query, sudo }: DefaultRequestOptions) {
+  return [
+    endpoint,
+    {
+      baseUrl: service.url,
+      headers: { sudo, ...service.headers },
+      query: query && stringify(decamelizeKeys(query), { arrayFormat: 'bracket' }),
+      body: body && decamelizeKeys(body, skipAllCaps),
+      rejectUnauthorized: service.rejectUnauthorized,
+      json: true,
+    },
+  ];
 }
 
-interface GetPaginatedOptions {
-  showPagination?: boolean;
-  maxPages?: number;
-  perPage?: number;
-  page?: number;
-  position?: temporaryAny;
-}
-
-type RequestParametersOutput = RequestParametersInput &
-  Required<Pick<RequestParametersInput, 'url'>>;
-
-export async function wait(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function defaultRequest(
-  { url, useXMLHttpRequest, rejectUnauthorized }: BaseService,
+async function getImplementation(
+  service,
   endpoint: string,
-  { headers, body, qs, formData, resolveWithFullResponse = false }: RequestParametersInput,
-): RequestParametersOutput {
-  const params: RequestParametersOutput = {
-    url: URLJoin(url, endpoint),
-    headers,
-    json: true,
+  options: PaginatedRequestOptions = {},
+  isNextPageRequest: boolean = false,
+): Promise<GetResponse> {
+  const { showPagination, maxPages, sudo, ...query } = options;
+  const requestOptions = defaultRequest(service, endpoint, {
+    query,
+    sudo,
+  });
+
+  const { headers, body } = await service.requester.get(...requestOptions);
+
+  const pagination = {
+    total: headers['x-total'],
+    next: headers['x-next-page'] || null,
+    current: headers['x-page'] || null,
+    previous: headers['x-prev-page'] || null,
+    perPage: headers['x-per-page'],
+    totalPages: headers['x-total-pages'],
   };
 
-  if (body) params.body = Humps.decamelizeKeys(body);
-
-  if (qs) {
-    if (useXMLHttpRequest) {
-      // The xhr package doesn't have a way of passing in a qs object until v3
-      params.url = URLJoin(params.url, `?${QS.stringify(Humps.decamelizeKeys(qs), { arrayFormat: 'brackets' })}`);
-    } else {
-      params.qs = Humps.decamelizeKeys(qs);
-      params.qsStringifyOptions = { arrayFormat: 'brackets' };
-    }
-  }
-
-  if (formData) params.formData = formData;
-
-  params.resolveWithFullResponse = resolveWithFullResponse;
-
-  params.rejectUnauthorized = rejectUnauthorized;
-
-  return params;
-}
-
-function getStream(service: BaseService, endpoint: string, options: RequestOptions = {}) {
-  if (service.useXMLHttpRequest) {
-    throw new Error(
-      `Cannot use streaming functionality with XMLHttpRequest. Please instantiate without this
-      option to use streaming`,
-    );
-  }
-
-  const requestOptions = defaultRequest(service, endpoint, {
-    headers: service.headers,
-    qs: options,
-  });
-
-  return StreamableRequest.get(requestOptions);
-}
-
-async function getPaginated(
-  service: BaseService,
-  endpoint: string,
-  options: GetPaginatedOptions = {},
-) {
-  const { showPagination, maxPages, ...queryOptions } = options;
-  const requestOptions = defaultRequest(service, endpoint, {
-    headers: service.headers,
-    qs: queryOptions,
-    resolveWithFullResponse: true,
-  });
-
-  const response = await service.requester.get(requestOptions);
-  const links = LinkParser(response.headers.link) || {};
-  const page = response.headers['x-page'];
-  const underMaxPageLimit = maxPages ? page < maxPages : true;
-  let more = [];
-  let data: temporaryAny;
+  const underLimit = maxPages ? pagination.current < maxPages : true;
 
   // If not looking for a singular page and still under the max pages limit
   // AND their is a next page, paginate
-  if (!queryOptions.page && underMaxPageLimit && links.next) {
-    more = await getPaginated(service, links.next.url.replace(service.url, ''), options);
-    data = [...response.body, ...more];
-  } else {
-    data = response.body;
-  }
-
-  if ((queryOptions.page || maxPages) && showPagination) {
-    return {
-      data,
-      pagination: {
-        total: response.headers['x-total'],
-        next: response.headers['x-next-page'] || null,
-        current: response.headers['x-page'] || null,
-        previous: response.headers['x-prev-page'] || null,
-        perPage: response.headers['x-per-page'],
-        totalPages: response.headers['x-total-pages'],
+  if ((isNextPageRequest || !query.page) && underLimit && pagination.next) {
+    const more = await getImplementation(
+      service,
+      endpoint,
+      {
+        ...options,
+        page: pagination.next
       },
-    };
+      true,
+    );
+
+    return [...body, ...more];
   }
 
-  return data;
+  return (query.page || underLimit) && showPagination ? { data: body, pagination } : body;
 }
 
-type RequestType = 'post' | 'get' | 'put' | 'delete';
+export async function get(
+  service,
+  endpoint: string,
+  options: PaginatedRequestOptions = {},
+): Promise<GetResponse> {
+  return getImplementation(service, endpoint, options);
+}
 
-export interface RequestOptions {
-  targetIssueId?: string;
-  targetProjectId?: string;
-  content?: string;
-  id?: string;
-  sourceBranch?: string;
-  targetBranch?: string;
-  /** The duration in human format. e.g: 3h30m */
-  duration?: string;
-  domain?: string;
-  cron?: temporaryAny;
-  description?: string;
-  file?: {
-    value: Buffer;
-    options: {
-      filename: string;
-      contentType: 'application/octet-stream';
-    };
+export function stream(service, endpoint: string, options: BaseRequestOptions = ({} = {})) {
+  return service.requester.stream(
+    ...defaultRequest(service, endpoint, {
+      query: options,
+    }),
+  );
+}
+
+export async function post(
+  service,
+  endpoint: string,
+  options: BaseRequestOptions = {},
+): Promise<PostResponse> {
+  const { sudo, ...body } = options;
+  const response = await service.requester.post(
+    ...defaultRequest(service, endpoint, {
+      body,
+      sudo,
+    }),
+  );
+
+  return response.body;
+}
+
+export async function postData(service, endpoint: string, body: FormData): Promise<PostResponse> {
+  const requestOptions = {
+    baseUrl: service.url,
+    headers: service.headers,
+    body,
+    rejectUnauthorized: service.rejectUnauthorized,
   };
-  path?: string;
-  namespace?: string;
-  visibility?: string;
-  code?: string;
-  fileName?: string;
-  from?: string;
-  to?: string;
-  sha?: string;
-  runnerId?: string;
-  ref?: string;
-  scope?: string;
-  url?: string;
-  scopes?: temporaryAny;
-  expiresAt?: string;
-  note?: string;
-  actions?: CommitAction[];
-  commitMessage?: string;
-  branch?: string;
-  body?: string | temporaryAny;
-  title?: string;
-  name?: string;
-  labelId?: temporaryAny;
-  accessLevel?: number;
-  userId?: UserId;
-  position?: temporaryAny;
-  value?: string;
-  linkUrl?: string;
-  imageUrl?: string;
-  key?: string;
-  action?: string;
-  targetType?: string;
-  email?: string;
-  password?: string;
-  search?: string;
-  public?: boolean;
-  text?: string;
-}
 
-class RequestHelper {
-  static async request(
-    type: RequestType,
-    service: BaseService,
-    endpoint: string,
-    options: RequestOptions = {},
-    form = false,
-    stream = false,
-  ): Promise<temporaryAny> {
-    try {
-      switch (type) {
-        case 'get':
-          if (stream) return await getStream(service, endpoint, options);
-          return await getPaginated(service, endpoint, options);
+  const response = await service.requester.post(endpoint, requestOptions);
 
-        case 'post': {
-          const requestOptions = defaultRequest(service, endpoint, {
-            headers: service.headers,
-            [form ? 'formData' : 'body']: options,
-          });
-
-          return await service.requester.post(requestOptions);
-        }
-
-        case 'put': {
-          const requestOptions = defaultRequest(service, endpoint, {
-            headers: service.headers,
-            body: options,
-          });
-
-          return await service.requester.put(requestOptions);
-        }
-
-        case 'delete': {
-          const requestOptions = defaultRequest(service, endpoint, {
-            headers: service.headers,
-            qs: options,
-          });
-
-          return await service.requester.delete(requestOptions);
-        }
-
-        default:
-          throw new Error(`Unknown request type ${type}`);
-      }
-    } catch (err) {
-      await RequestHelper.handleRequestError(err);
-      return RequestHelper.request(type, service, endpoint, options, form, stream);
-    }
-  }
-
-  static async handleRequestError(err: temporaryAny) {
-    if (
-      !err.response ||
-      !err.response.headers ||
-      !err.response.headers['retry-after'] ||
-      parseInt(err.statusCode, 10) !== 429
-    ) {
-      throw err;
-    }
-
-    const sleepTime = parseInt(err.response.headers['retry-after'], 10);
-
-    if (!sleepTime) throw err;
-    return wait(sleepTime * 1000);
-  }
-
-  static get(
-    service: BaseService,
-    endpoint: string,
-    options: RequestOptions = {},
-    { stream = false } = {},
-  ) {
-    return RequestHelper.request('get', service, endpoint, options, false, stream);
-  }
-
-  static post(service: BaseService, endpoint: string, options: RequestOptions = {}, form = false) {
-    return RequestHelper.request('post', service, endpoint, options, form);
-  }
-
-  static put(service: BaseService, endpoint: string, options: RequestOptions = {}) {
-    return RequestHelper.request('put', service, endpoint, options);
-  }
-
-  static delete(service: BaseService, endpoint: string, options: RequestOptions = {}) {
-    return RequestHelper.request('delete', service, endpoint, options);
+  try {
+    return JSON.parse(response.body);
+  } catch (e) {
+    return {};
   }
 }
 
-export default RequestHelper;
+export async function put(
+  service,
+  endpoint: string,
+  options: BaseRequestOptions = {},
+): Promise<PutResponse> {
+  const { sudo, ...body } = options;
+  const response = await service.requester.put(
+    ...defaultRequest(service, endpoint, {
+      body,
+    }),
+  );
+
+  return response.body;
+}
+
+export async function del(
+  service,
+  endpoint: string,
+  options: BaseRequestOptions = {},
+): Promise<DelResponse> {
+  const { sudo, ...query } = options;
+  const response = await service.requester.delete(
+    ...defaultRequest(service, endpoint, {
+      query,
+    }),
+  );
+
+  return response.body;
+}

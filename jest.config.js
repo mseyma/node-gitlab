@@ -2,14 +2,14 @@ module.exports = {
 	preset: 'ts-jest',
 
 	testEnvironment: 'node',
-	testRegex: 'test/tests/.*\\.ts$',
+	testRegex: 'test/.*\\.ts$',
 	testMatch: null,
 	testURL: 'http://localhost/',
 
 	coverageDirectory: './coverage/',
 	collectCoverage: true,
 
-	setupTestFrameworkScriptFile: 'jest-extended',
+	setupFilesAfterEnv: ['jest-extended'],
 
 	globals: {
 		'ts-jest': {

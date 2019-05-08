@@ -1,33 +1,45 @@
+import FormData from 'form-data';
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import { BaseRequestOptions, BaseServiceOptions, Sudo, ProjectId } from '../../types/types';
 
 class ProjectImportExport extends BaseService {
-  download(projectId: ProjectId) {
-    const pId = encodeURIComponent(projectId);
-
-    return RequestHelper.get(this, `projects/${pId}/export/download`);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['projects']);
   }
 
-  exportStatus(projectId: ProjectId) {
+  download(projectId: ProjectId, options?: Sudo) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.get(this, `projects/${pId}/export`);
+    return RequestHelper.get(this, `${pId}/export/download`, options);
   }
 
-  import(file: temporaryAny, path: string, options: RequestOptions) {
-    return RequestHelper.post(this, 'projects/import', { file, path, ...options });
-  }
-
-  importStatus(projectId: ProjectId) {
+  exportStatus(projectId: ProjectId, options?: Sudo) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.get(this, `projects/${pId}/import`);
+    return RequestHelper.get(this, `${pId}/export`, options);
   }
 
-  schedule(projectId: ProjectId, options: RequestOptions) {
+  import(content: string, path: string) {
+    const form = new FormData();
+
+    form.append('file', content, {
+      filename: path,
+      contentType: 'application/octet-stream',
+    });
+
+    return RequestHelper.postData(this, 'import', form);
+  }
+
+  importStatus(projectId: ProjectId, options?: Sudo) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.post(this, `projects/${pId}/export`, options);
+    return RequestHelper.get(this, `${pId}/import`, options);
+  }
+
+  schedule(projectId: ProjectId, options?: BaseRequestOptions) {
+    const pId = encodeURIComponent(projectId);
+
+    return RequestHelper.post(this, `${pId}/export`, options);
   }
 }
 

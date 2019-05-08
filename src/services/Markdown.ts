@@ -1,9 +1,13 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import { BaseServiceOptions, Sudo, ProjectId } from '../../types/types';
 
 class Markdown extends BaseService {
-  render(text: string, options: RequestOptions) {
-    return RequestHelper.post(this, 'markdown', { text, ...options });
+  constructor(options: BaseServiceOptions) {
+    super(options, ['markdown']);
+  }
+
+  render(text: string, options: { gfm?: string, project?: ProjectId } & Sudo) {
+    return RequestHelper.post(this, '', { text, ...options });
   }
 }
 

@@ -1,12 +1,17 @@
 import { BaseService, RequestHelper } from '../infrastructure';
+import { BaseServiceOptions, Sudo } from '../../types/types';
 
 class Licence extends BaseService {
-  all() {
-    return RequestHelper.get(this, 'licence');
+	constructor(options: BaseServiceOptions) {
+    super(options, ['licence']);
   }
 
-  create() {
-    return RequestHelper.post(this, 'licence');
+  all(options?: Sudo) {
+    return RequestHelper.get(this, '', options);
+  }
+
+  create(options?: Sudo) {
+    return RequestHelper.post(this, '', options);
   }
 }
 

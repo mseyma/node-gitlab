@@ -1,43 +1,51 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-
-type ImpersonationTokenId = string | number;
+import {
+  BaseServiceOptions,
+  ImpersonationTokenId,
+  ImpersonationTokenScope,
+  PaginatedRequestOptions,
+  Sudo,
+  UserId,
+} from '../../types/types';
 
 class UserImpersonationTokens extends BaseService {
-  all(userId: UserId) {
-    const uId = encodeURIComponent(userId);
-
-    return RequestHelper.get(this, `users/${uId}/impersonation_tokens`);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['users']);
   }
-  /**
-   * It creates a new impersonation token. Note that only administrators can do this.
-   * You are only able to create impersonation tokens to impersonate the user and perform
-   * both API calls and Git reads and writes. The user will not see these tokens
-   * in their profile settings page.
-   * @param userId UserId
-   * @param name The name of the impersonation token
-   * @param scopes The array of scopes of the impersonation token (api, read_user)
-   * @param expiresAt The expiration date of the impersonation token in ISO format (YYYY-MM-DD)
-   */
-  add(userId: UserId, name: string, scopes: temporaryAny, expiresAt: string) {
+
+  all(userId: UserId, options?: PaginatedRequestOptions) {
     const uId = encodeURIComponent(userId);
 
-    return RequestHelper.post(this, `users/${uId}/impersonation_tokens`, {
+    return RequestHelper.get(this, `${uId}/impersonation_tokens`, options);
+  }
+
+  add(
+    userId: UserId,
+    name: string,
+    scopes: ImpersonationTokenScope,
+    expiresAt: string,
+    options?: Sudo,
+  ) {
+    const uId = encodeURIComponent(userId);
+
+    return RequestHelper.post(this, `${uId}/impersonation_tokens`, {
       name,
       expiresAt,
       scopes,
+      ...options,
     });
   }
 
-  show(userId: UserId, tokenId: ImpersonationTokenId) {
+  show(userId: UserId, tokenId: ImpersonationTokenId, options?: Sudo) {
     const [uId, tId] = [userId, tokenId].map(encodeURIComponent);
 
-    return RequestHelper.get(this, `users/${uId}/impersonation_tokens/${tId}`);
+    return RequestHelper.get(this, `${uId}/impersonation_tokens/${tId}`, options);
   }
 
-  revoke(userId: UserId, tokenId: ImpersonationTokenId) {
+  revoke(userId: UserId, tokenId: ImpersonationTokenId, options?: Sudo) {
     const [uId, tId] = [userId, tokenId].map(encodeURIComponent);
 
-    return RequestHelper.delete(this, `users/${uId}/impersonation_tokens/${tId}`);
+    return RequestHelper.del(this, `${uId}/impersonation_tokens/${tId}`, options);
   }
 }
 

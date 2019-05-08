@@ -1,35 +1,45 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
+import {
+  BaseRequestOptions,
+  BaseServiceOptions,
+  PaginatedRequestOptions,
+  ProjectId,
+  Sudo,
+} from '../../types/types';
 
 class Wikis extends BaseService {
-  all(projectId: ProjectId, options: RequestOptions) {
-    const pId = encodeURIComponent(projectId);
-
-    return RequestHelper.get(this, `projects/${pId}/wikis`, options);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['projects']);
   }
 
-  create(projectId: ProjectId, options: RequestOptions) {
+  all(projectId: ProjectId, options?: PaginatedRequestOptions) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.post(this, `projects/${pId}/wikis`, options);
+    return RequestHelper.get(this, `${pId}/wikis`, options);
   }
 
-  edit(projectId: ProjectId, slug: string, options: RequestOptions) {
+  create(projectId: ProjectId, options?: BaseRequestOptions) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.put(this, `projects/${pId}/wikis/${slug}`, options);
+    return RequestHelper.post(this, `${pId}/wikis`, options);
   }
 
-  show(projectId: ProjectId, slug: string) {
+  edit(projectId: ProjectId, slug: string, options?: BaseRequestOptions) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.get(this, `projects/${pId}/wikis/${slug}`);
+    return RequestHelper.put(this, `${pId}/wikis/${slug}`, options);
   }
 
-  remove(projectId: ProjectId, slug: string) {
+  show(projectId: ProjectId, slug: string, options?: Sudo) {
     const pId = encodeURIComponent(projectId);
 
-    return RequestHelper.delete(this, `projects/${pId}/wikis/${slug}`);
+    return RequestHelper.get(this, `${pId}/wikis/${slug}`, options);
+  }
+
+  remove(projectId: ProjectId, slug: string, options?: Sudo) {
+    const pId = encodeURIComponent(projectId);
+
+    return RequestHelper.del(this, `${pId}/wikis/${slug}`, options);
   }
 }
 

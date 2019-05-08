@@ -1,39 +1,82 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
-
-type GroupId = string | number;
+import {
+  PaginatedRequestOptions,
+  BaseServiceOptions,
+  BaseRequestOptions,
+  Sudo,
+  GroupId,
+} from '../../types/types';
 
 class Groups extends BaseService {
-  all(options: RequestOptions) {
-    return RequestHelper.get(this, 'groups', options);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['groups']);
   }
 
-  create(options: RequestOptions) {
-    return RequestHelper.post(this, 'groups', options);
+  all(options?: PaginatedRequestOptions) {
+    return RequestHelper.get(this, '', options);
   }
 
-  remove(groupId: GroupId) {
+  create(options?: BaseRequestOptions) {
+    return RequestHelper.post(this, '', options);
+  }
+
+  createLDAPLink(groupId: GroupId, cn: string, groupAccess, provider: string, options?: Sudo) {
     const gId = encodeURIComponent(groupId);
 
-    return RequestHelper.delete(this, `groups/${gId}`);
-  }
-
-  search(nameOrPath: string) {
-    return RequestHelper.get(this, 'groups', {
-      search: nameOrPath,
+    return RequestHelper.post(this, `${gId}/ldap_group_links`, {
+      cn,
+      groupAccess,
+      provider,
+      ...options,
     });
   }
 
-  show(groupId: GroupId) {
+  edit(groupId: GroupId, options?: BaseRequestOptions) {
     const gId = encodeURIComponent(groupId);
 
-    return RequestHelper.get(this, `groups/${gId}`);
+    return RequestHelper.put(this, `${gId}`, options);
   }
 
-  subgroups(groupId: GroupId, options: RequestOptions) {
+  remove(groupId: GroupId, options?: Sudo) {
     const gId = encodeURIComponent(groupId);
 
-    return RequestHelper.get(this, `groups/${gId}/subgroups`, options);
+    return RequestHelper.del(this, `${gId}`, options);
+  }
+
+  removeLDAPLink(
+    groupId: GroupId,
+    cn: string,
+    { provider, ...options }: Sudo & { provider?: string } = {},
+  ) {
+    const gId = encodeURIComponent(groupId);
+    const url = provider ? `${provider}/${cn}` : `${cn}`;
+
+    return RequestHelper.del(this, `${gId}/ldap_group_links/${url}`, options);
+  }
+
+  search(nameOrPath: string, options?: Sudo) {
+    return RequestHelper.get(this, 'groups', {
+      search: nameOrPath,
+      ...options,
+    });
+  }
+
+  show(groupId: GroupId, options?: BaseRequestOptions) {
+    const gId = encodeURIComponent(groupId);
+
+    return RequestHelper.get(this, `${gId}`, options);
+  }
+
+  subgroups(groupId: GroupId, options?: PaginatedRequestOptions) {
+    const gId = encodeURIComponent(groupId);
+
+    return RequestHelper.get(this, `${gId}/subgroups`, options);
+  }
+
+  syncLDAP(groupId: GroupId, options?: Sudo) {
+    const gId = encodeURIComponent(groupId);
+
+    return RequestHelper.post(this, `${gId}/ldap_sync`, options);
   }
 }
 

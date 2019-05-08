@@ -1,49 +1,57 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
-
-export type GeonodeId = string | number;
+import {
+  BaseServiceOptions,
+  PaginatedRequestOptions,
+  BaseRequestOptions,
+  Sudo,
+  GeonodeId,
+} from '../../types/types';
 
 class GeoNodes extends BaseService {
-  all(options: RequestOptions) {
-    return RequestHelper.get(this, 'geo_nodes', options);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['geo_nodes']);
   }
 
-  create(geonodeId: GeonodeId, options: RequestOptions) {
+  all(options?: PaginatedRequestOptions) {
+    return RequestHelper.get(this, '', options);
+  }
+
+  create(geonodeId: GeonodeId, options?: BaseRequestOptions) {
     const gId = encodeURIComponent(geonodeId);
 
-    return RequestHelper.post(this, `geo_nodes/${gId}`, options);
+    return RequestHelper.post(this, `${gId}`, options);
   }
 
-  edit(geonodeId: GeonodeId, options: RequestOptions) {
+  edit(geonodeId: GeonodeId, options?: BaseRequestOptions) {
     const gId = encodeURIComponent(geonodeId);
 
-    return RequestHelper.put(this, `geo_nodes/${gId}`, options);
+    return RequestHelper.put(this, `${gId}`, options);
   }
 
-  failures(options: RequestOptions) {
-    return RequestHelper.post(this, 'geo_nodes/current/failures', options);
+  failures(options?: BaseRequestOptions) {
+    return RequestHelper.post(this, 'current/failures', options);
   }
 
-  repair(geonodeId: GeonodeId, options: RequestOptions) {
+  repair(geonodeId: GeonodeId, options?: Sudo) {
     const gId = encodeURIComponent(geonodeId);
 
-    return RequestHelper.delete(this, `geo_nodes/${gId}`, options);
+    return RequestHelper.del(this, `${gId}`, options);
   }
 
-  show(geonodeId: GeonodeId, options: RequestOptions) {
+  show(geonodeId: GeonodeId, options?: Sudo) {
     const gId = encodeURIComponent(geonodeId);
 
-    return RequestHelper.get(this, `geo_nodes/${gId}`, options);
+    return RequestHelper.get(this, `${gId}`, options);
   }
 
-  status(geonodeId: GeonodeId, options: RequestOptions) {
+  status(geonodeId: GeonodeId, options?: Sudo) {
     const gId = encodeURIComponent(geonodeId);
 
-    return RequestHelper.get(this, `geo_nodes/${gId}/status`, options);
+    return RequestHelper.get(this, `${gId}/status`, options);
   }
 
-  statuses(options: RequestOptions) {
-    return RequestHelper.get(this, 'geo_nodes/statuses', options);
+  statuses(options?: PaginatedRequestOptions) {
+    return RequestHelper.get(this, 'statuses', options);
   }
 }
 

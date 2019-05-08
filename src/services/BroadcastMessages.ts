@@ -1,33 +1,40 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
-
-export type BroadcastMessageId = string | number;
+import {
+  BaseServiceOptions,
+  BaseRequestOptions,
+  PaginatedRequestOptions,
+  BroadcastMessageId,
+} from '../../types/types';
 
 class BroadcastMessages extends BaseService {
-  all(options: RequestOptions) {
-    return RequestHelper.get(this, 'broadcast_messages', options);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['broadcast_messages']);
   }
 
-  create(options: RequestOptions) {
-    return RequestHelper.post(this, 'broadcast_messages', options);
+  all(options?: PaginatedRequestOptions) {
+    return RequestHelper.get(this, '', options);
   }
 
-  edit(broadcastMessageId: BroadcastMessageId, options: RequestOptions) {
+  create(options?: BaseRequestOptions) {
+    return RequestHelper.post(this, '', options);
+  }
+
+  edit(broadcastMessageId: BroadcastMessageId, options?: BaseRequestOptions) {
     const bId = encodeURIComponent(broadcastMessageId);
 
-    return RequestHelper.put(this, `broadcast_messages/${bId}`, options);
+    return RequestHelper.put(this, `${bId}`, options);
   }
 
   remove(broadcastMessageId: BroadcastMessageId) {
     const bId = encodeURIComponent(broadcastMessageId);
 
-    return RequestHelper.delete(this, `broadcast_messages/${bId}`);
+    return RequestHelper.del(this, `${bId}`);
   }
 
-  show(broadcastMessageId: BroadcastMessageId, options: RequestOptions) {
+  show(broadcastMessageId: BroadcastMessageId, options?: BaseRequestOptions) {
     const bId = encodeURIComponent(broadcastMessageId);
 
-    return RequestHelper.get(this, `broadcast_messages/${bId}`, options);
+    return RequestHelper.get(this, `${bId}`, options);
   }
 }
 

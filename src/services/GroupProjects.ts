@@ -1,20 +1,28 @@
 import { BaseService, RequestHelper } from '../infrastructure';
-import { RequestOptions } from '../infrastructure/RequestHelper';
-
-type GroupProjectId = string | number;
+import {
+	PaginatedRequestOptions,
+	BaseServiceOptions,
+	BaseRequestOptions,
+	GroupProjectId,
+	ProjectId,
+} from '../../types/types';
 
 class GroupProjects extends BaseService {
-  all(groupId: GroupProjectId, options: RequestOptions) {
-    const gId = encodeURIComponent(groupId);
-
-    return RequestHelper.get(this, `groups/${gId}/projects`, options);
+  constructor(options: BaseServiceOptions) {
+    super(options, ['groups']);
   }
 
-  add(groupId: GroupProjectId, projectId: ProjectId) {
-    const [gId, pId] = [groupId, projectId].map(encodeURIComponent);
+	all(groupId: GroupProjectId, options?: PaginatedRequestOptions) {
+		const gId = encodeURIComponent(groupId);
 
-    return RequestHelper.post(this, `groups/${gId}/projects/${pId}`);
-  }
+		return RequestHelper.get(this, `${gId}/projects`, options);
+	}
+
+	add(groupId: GroupProjectId, projectId: ProjectId, options?: BaseRequestOptions) {
+		const [gId, pId] = [groupId, projectId].map(encodeURIComponent);
+
+		return RequestHelper.post(this, `${gId}/projects/${pId}`, options);
+	}
 }
 
 export default GroupProjects;
